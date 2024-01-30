@@ -8,6 +8,7 @@ from Handlers.WalletHandler import WalletHandler
 from TaskMethods import Task
 from UserInterface import UserInterface
 
+
 # create_db----------------------------------------------------------------------------------------------------------------------------------
 db_path = f'{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
 engine = create_engine(f'postgresql+psycopg2://{db_path}', echo=False)

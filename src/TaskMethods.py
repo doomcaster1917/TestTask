@@ -1,5 +1,5 @@
 from config import TELEGRAM_ID, FIRST_NAME, LAST_NAME, USER_TG_NAME
-from Exceptions import *
+from DatabaseModel import TransactionType
 from decimal import *
 import tools
 import requests
@@ -31,12 +31,17 @@ class Task():
     def get_wallet_balance(self, telegram_id=TELEGRAM_ID):
         wallet = self.wallet_handler.get_wallet(telegram_id)
         balance = { "XMR": wallet.xmrBalance if wallet.xmrBalance else None,
-                    "ETH": wallet.ethBalance if wallet.trxBalance else None,
-                    "TON": wallet.tonBalance if wallet.usdtBalance else None,
+                    "ETH": wallet.ethBalance if wallet.ethBalance else None,
+                    "TRX": wallet.trxBalance if wallet.trxBalance else None,
+                    "TON": wallet.tonBalance if wallet.tonBalance else None,
                     "BTC": wallet.btcBalance if wallet.btcBalance else None,
                     "USDT": wallet.usdtBalance if wallet.usdtBalance else None,
                     "RUB": wallet.rubBalance if wallet.rubBalance else None}
         return balance
+
+    def get_current_transaction_info(self, date_time, telegram_id=TELEGRAM_ID):
+        return self.transactions_handler.get_change_operation(telegram_id, date_time)
+
 
     # DB_init_methods------------------------------------------------------------------------------------------------------------------------------
     def add_user(self):
@@ -50,10 +55,10 @@ class Task():
         self.wallet_handler.add_to_wallet(self.telegram_id, currency, value)
 
     # DB_methods----------------------------------------------------------------------------------------------------------------------------------
-    def in_change_currency(self, date_time:str, telegram_id: int, currency_from: str, currency_to: str, value_from: str, value_to: Decimal):
+    def in_change_currency(self, date_time:str, telegram_id: int, currency_from: str, currency_to: str, value_from: Decimal, value_to: Decimal):
         actingUser = self.user_handler.get_by_id(telegram_id)
-        cur_rate_from = self.get_currency_price(currency_from, currency_to)
-        cur_rate_to = self.get_currency_price(currency_to, currency_from)
+        cur_rate_from = self.get_currency_price(currency_to, currency_from)
+        cur_rate_to = self.get_currency_price(currency_from, currency_to)
         comission_rate = 0
 
         #1 Добавление продаваемой валюты(по заданию - USD или RUB) в депозит
@@ -77,16 +82,48 @@ class Task():
         self.transactions_handler.addOutOperation(actingUser, currency_from, cur_rate_from, value_from, comission_rate, date_time)
 
     # calculate_methods---------------------------------------------------------------------------------------------------------------------------
-    def calculate_transactions_profits(self, telegram_id: int, transactions: list[dict]):
-        for transaction in transactions:
-            ...
-        ...
+    def exchanges_filter(self) -> dict:
+        exchanges = self.transactions_handler.getExchanges(self.telegram_id)
+        bought_exchanges = []
+        sold_exchanges = []
+        if exchanges:
+            for exchange in exchanges:
+                if exchange['FromCurrency'] == "RUB":
+                    bought_exchanges.append(exchange)
+                else:
+                    sold_exchanges.append(exchange)
+
+        return {"buy_operations": bought_exchanges, "sell_operations": sold_exchanges}
+
+    def calculate_transactions_profits(self):
+        # Завершённые операции <Человек купил крипту и через n времени вернул всю сумму или часть от суммы в рубли>
+        exchanges = self.exchanges_filter()
+        buy_exchanges = exchanges["buy_operations"]
+        sell_operations = exchanges["sell_operations"]
+        done_operations = []
+        for sell in sell_operations:
+            for buy in buy_exchanges:
+                if sell['ToCurrency'] == buy['FromCurrency'] and sell['DateTime'] > buy['DateTime']:
+                    current_sell_info = self.get_current_transaction_info(sell['DateTime'])
+                    current_buy_info = self.get_current_transaction_info(buy['DateTime'])
+                    timestamp = sell['DateTime']
+                    currency = sell['FromCurrency']
+                    profit = float(sell["FromValue"]) * float(current_sell_info.currencyRateTo - current_buy_info.currencyRateFrom) # в рублях
+                    done_operations.append({"timestamp": timestamp,"currency": currency, "profit": profit, "value": sell["FromValue"]})
+
+                    #Не входит в задание, но оставлю на всякий случай.
+                    #Возможно, вообще следовало бы в методе in_change_currency добавить этот код и
+                    #сохранять профиты при каждой операции перевода крипты в RUB
+                    """transaction_id = sell['transactionId']
+                    transaction_type = TransactionType.exchange
+                    telegram_id = sell['userId']
+                    margin = sell["valueTo"] * (current_sell_info.currencyRateFrom - current_buy_info.currencyRateTo)  # в криптовалюте
+                    self.transactions_handler.add_profit(transaction_id, transaction_type, telegram_id, currency, profit, margin)"""
+
+        return done_operations
 
     def calculate_general_profit(self, transactions: list[dict]):
-        for transaction in transactions:
-            ...
         ...
-
     def calculate_value_to(self, currency_from: str, currency_to: str, value_from: Decimal):
         price_to = self.get_currency_price(currency_to, currency_from)
         value_to = value_from/price_to

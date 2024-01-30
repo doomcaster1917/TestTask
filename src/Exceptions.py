@@ -1,3 +1,5 @@
+#Deleted from code
+
 class NotRightCurName(Exception):
     def __str__(self):
         return "Not right currency name"

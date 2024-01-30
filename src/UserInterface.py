@@ -1,5 +1,7 @@
 from config import FIRST_NAME
 from datetime import datetime
+import pytz
+import time
 import tools
 
 class UserInterface():
@@ -17,7 +19,7 @@ class UserInterface():
         elif command.lower() == 'продать':
             self.sell_commands_handler()
         elif command.lower() == 'рассчитать':
-            ...
+            self.calulation_commands_handler()
         else:
             print("Введена неверная команда \n")
             self.main_commands_handler()
@@ -25,16 +27,17 @@ class UserInterface():
     # buy_commands---------------------------------------------------------------------------------------------------------
 
     def buy_commands_handler(self):
-        currence_from = "RUB"
+        currency_from = "RUB"
         currency_to = self.choose_currence_to()
-        value_from = self.choose_value_from(currence_from)
+        value_from = self.choose_value_from(currency_from)
 
-        value_to = self.task.calculate_value_to(currence_from, currency_to, value_from) # returns Dectimal
+        value_to = self.task.calculate_value_to(currency_from, currency_to, value_from) # returns Dectimal
+
 
         date_time = datetime.now().strftime("%s")
-        self.task.in_change_currency(date_time, self.task.telegram_id, currency_from=currence_from,
+        self.task.in_change_currency(date_time, self.task.telegram_id, currency_from=currency_from,
                                      currency_to=currency_to, value_from=value_from, value_to=value_to)
-        print(f"\n **Вы приобрели {value_to:.6f} {currency_to} на сумму {value_from:.2f} {currence_from}** \n")
+        print(f"\n **Вы приобрели {value_to:.6f} {currency_to} на сумму {value_from:.2f} {currency_from}** \n")
         self.main_commands_handler()
 
 
@@ -81,7 +84,6 @@ class UserInterface():
 
     def choose_crpt_currency_from(self):
         balance = self.task.get_wallet_balance()
-
         positive_balances = []
         for key in balance.keys():
             if balance[key] and key != "RUB":
@@ -103,7 +105,7 @@ class UserInterface():
 
         else:
             print("\n **Валюта покупки выбрана неверно** \n")
-            self.choose_crpt_currency_from()
+            self.main_commands_handler()
 
 
     def choose_crpt_value_from(self, cur_from: str):
@@ -117,7 +119,68 @@ class UserInterface():
                 raise ValueError
         except ValueError:
             print("\n **Сумма введена неверно** \n")
-            self.choose_crpt_value_from(cur_from)
+            self.main_commands_handler()
+
+    # calculation_commands------------------------------------------------------------------------------------------
+    def calulation_commands_handler(self):
+        string_exchanges = self.show_all_ecxhanges_handler()
+        command = input(f"\n{string_exchanges if string_exchanges.strip() else 'У вас нет операци покупок/продаж'} \n"
+                        f"\n Чтобы узнать общую прибыть, введите 'Прибыль'"
+                        f"Для вовзрата в главное меню введите 'Выйти' \n")
+        if command.lower() == 'прибыль':
+            self.profit_handler()
+
+        elif command.lower() == 'выйти':
+            self.main_commands_handler()
+
+    def profit_handler(self) -> None:
+        done_operations = self.task.calculate_transactions_profits()
+        output_string = ""
+        for operation in done_operations:
+            timestamp = operation["timestamp"]
+            formatted_date_time = datetime.fromtimestamp(int(timestamp), pytz.timezone('Europe/Moscow')).strftime(
+                '%Y-%m-%d %H:%M:%S')
+            output_string += (f"{formatted_date_time}: продажа {float(operation['value']):.6f} {operation['currency']} принесла"
+                              f"{float(operation['profit']):.2f} рублей прибыли \n")
+        if output_string == '':
+            output_string = '\n **Пока нет завершённых операций. \n'
+        command = input(f"{output_string} \n Для вовзрата в главное меню введите 'Выйти'")
+
+        if command.lower() == 'выйти':
+            self.main_commands_handler()
+
+    # В этой функции хардкод, не соответствующий принципу DRY. Если будет хватать времени, сделаю рефакторинг.
+    def show_all_ecxhanges_handler(self):
+        exchanges = self.task.exchanges_filter()
+        buy_string = ""
+        sell_string = ""
+        if exchanges["buy_operations"] != []:
+            buy_string += "Операции покупок: \n"
+            for exchange in exchanges["buy_operations"]:
+                timestamp = exchange["DateTime"]
+                formatted_date_time = datetime.fromtimestamp(int(timestamp), pytz.timezone('Europe/Moscow')).strftime('%Y-%m-%d %H:%M:%S')
+                to_currency = exchange["ToCurrency"]
+                from_value = exchange["FromValue"]
+                to_value = exchange['ToValue']
+                current_info = self.task.get_current_transaction_info(timestamp)
+                currency_rate_from = current_info.currencyRateFrom
+                buy_string += (f"{formatted_date_time}: куплено {float(to_value):.6f} {to_currency} на сумму {float(from_value):.2f} рублей"
+                               f" по курсу {currency_rate_from} рублей за {to_currency}\n")
+
+        if exchanges["sell_operations"] != []:
+            sell_string += "Операции продаж: \n"
+            for exchange in exchanges["sell_operations"]:
+                timestamp = exchange["DateTime"]
+                formatted_date_time = datetime.fromtimestamp(int(timestamp), pytz.timezone('Europe/Moscow')).strftime('%Y-%m-%d %H:%M:%S')
+                from_value = exchange["FromValue"]
+                from_currency = exchange['FromCurrency']
+                to_value = exchange['ToValue']
+                current_info = self.task.get_current_transaction_info(timestamp)
+                currency_rate_to = current_info.currencyRateTo
+                sell_string += (f"{formatted_date_time}: продано {float(from_value):.6f} {from_currency} на сумму {float(to_value):.2f} рублей"
+                                f" по курсу {currency_rate_to} рублей за {from_currency} ")
+
+        return f"{buy_string} {sell_string}\n"
 
     # main_loop-----------------------------------------------------------------------------------------------------
     def main_loop(self):
