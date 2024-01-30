@@ -9,7 +9,7 @@ class Task():
     #Можно было бы унаследоваться от хендлеров, но их инициализацию легче производить в main,
     #передавая из сюда в качестве аргументов
     def __init__(self, TransactionHandler, UserHandler, WalletHandler):
-        self.currencies = ["XMR", "ETH", "TRX", "TON", "USDT", "BTC", "RUB", "USD"]
+        self.currencies = ["XMR", "ETH", "TRX", "TON", "USDT", "BTC", "RUB"]
         self.telegram_id = TELEGRAM_ID #You can set these values in .env file
         self.first_name = FIRST_NAME
         self.last_name = LAST_NAME
@@ -61,11 +61,11 @@ class Task():
         cur_rate_to = self.get_currency_price(currency_from, currency_to)
         comission_rate = 0
 
-        #1 Добавление продаваемой валюты(по заданию - USD или RUB) в депозит
+        #1 Добавление продаваемой валюты(по заданию - RUB) в депозит
         self.transactions_handler.addInOperation(actingUser, currency_from, value_from, cur_rate_from, comission_rate, date_time)
         self.transactions_handler.approveAddInOperation(telegram_id, date_time)
 
-        #2 Удаление продаваемой валюты(по заданию - USD или RUB) из кошелька
+        #2 Удаление продаваемой валюты(по заданию -  RUB) из кошелька
         self.wallet_handler.remove_from_wallet(telegram_id, currency_from, value_from)
 
         #3 Добавление обменной операции в таблицу внутренних обменных операций
@@ -78,7 +78,7 @@ class Task():
         self.wallet_handler.add_to_wallet(telegram_id, currency_to, value_to)
 
 
-        #5 Удаление продаваемой валюты(по заданию - USD или RUB) из депозита
+        #5 Удаление продаваемой валюты(по заданию -  RUB) из депозита
         self.transactions_handler.addOutOperation(actingUser, currency_from, cur_rate_from, value_from, comission_rate, date_time)
 
     # calculate_methods---------------------------------------------------------------------------------------------------------------------------
