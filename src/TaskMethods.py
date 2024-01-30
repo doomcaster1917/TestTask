@@ -1,6 +1,7 @@
 from config import TELEGRAM_ID, FIRST_NAME, LAST_NAME, USER_TG_NAME
 from Exceptions import *
 from decimal import *
+import tools
 import requests
 
 
@@ -19,15 +20,13 @@ class Task():
 
     # tools_methods------------------------------------------------------------------------------------------------------------------------------
     def get_currency_price(self, currency_from: str, currency_to: str):
-        print(currency_to, currency_from)
-        if currency_from not in self.currencies or currency_to not in self.currencies:
-            raise NotRightCurName
-        elif currency_to == currency_from:
-            raise MatchingDuplicateCurs
+        URL = f'https://min-api.cryptocompare.com/data/price?fsym={currency_from}&tsyms={currency_to}'
+        response = requests.get(URL)
+        if currency_to == "RUB":
+            dectimal_price = tools.revers_dectimal_converter(response.json()[currency_to]) #см. комментарии к методу
         else:
-            URL = f'https://min-api.cryptocompare.com/data/price?fsym={currency_from}&tsyms={currency_to}'
-            response = requests.get(URL)
-            return response.json()[currency_to]
+            dectimal_price = tools.dectimal_converter(response.json()[currency_to], currency_from)
+        return dectimal_price
 
     def get_wallet_balance(self, telegram_id=TELEGRAM_ID):
         wallet = self.wallet_handler.get_wallet(telegram_id)
@@ -88,11 +87,10 @@ class Task():
             ...
         ...
 
-    def calculate_value_to(self, currency_from: str, currency_to: str, value_from: float):
-        price_to = self.get_currency_price(currency_to, currency_from) #Цена крипты в RUB/USD
+    def calculate_value_to(self, currency_from: str, currency_to: str, value_from: Decimal):
+        price_to = self.get_currency_price(currency_to, currency_from)
         value_to = value_from/price_to
-        dectimal_to = Decimal(value_to).quantize(Decimal('.00'), rounding=ROUND_DOWN)
-        return dectimal_to
+        return value_to
 
 
 
