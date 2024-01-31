@@ -30,10 +30,7 @@ class UserInterface():
         currency_from = "RUB"
         currency_to = self.choose_currence_to()
         value_from = self.choose_value_from(currency_from)
-
-        value_to = self.task.calculate_value_to(currency_from, currency_to, value_from) # returns Dectimal
-
-
+        value_to = self.task.calculate_value_to(currency_from, currency_to, value_from)
         date_time = datetime.now().strftime("%s")
         self.task.in_change_currency(date_time, self.task.telegram_id, currency_from=currency_from,
                                      currency_to=currency_to, value_from=value_from, value_to=value_to)
@@ -154,38 +151,44 @@ class UserInterface():
         if command.lower() == 'выйти':
             self.main_commands_handler()
 
-    # В этой функции хардкод, не соответствующий принципу DRY. Если будет хватать времени, сделаю рефакторинг.
+    def prepare_exchanges_data(self, exchanges: list) -> list:
+        arr = []
+        for exchange in exchanges:
+            timestamp = exchange["DateTime"]
+            formatted_date_time = datetime.fromtimestamp(int(timestamp), pytz.timezone('Europe/Moscow')).strftime(
+                '%Y-%m-%d %H:%M:%S')
+            to_currency = exchange["ToCurrency"]
+            from_currency = exchange["FromCurrency"]
+            from_value = exchange["FromValue"]
+            to_value = exchange['ToValue']
+            currency_rate_from = self.task.get_current_transaction_info(timestamp).currencyRateFrom
+            currency_rate_to = self.task.get_current_transaction_info(timestamp).currencyRateTo
+
+            arr.append({"date_time": formatted_date_time, "to_currency": to_currency, "from_currency": from_currency,
+                        "from_value": from_value, "to_value": to_value, "rate_from": currency_rate_from, "rate_to": currency_rate_to})
+        return arr
+
     def show_all_ecxhanges_handler(self):
         exchanges = self.task.exchanges_filter()
         buy_string = ""
         sell_string = ""
-        if exchanges["buy_operations"] != []:
+        if exchanges["buy_operations"]:
             buy_string += "Операции покупок: \n"
-            for exchange in exchanges["buy_operations"]:
-                timestamp = exchange["DateTime"]
-                formatted_date_time = datetime.fromtimestamp(int(timestamp), pytz.timezone('Europe/Moscow')).strftime('%Y-%m-%d %H:%M:%S')
-                to_currency = exchange["ToCurrency"]
-                from_value = exchange["FromValue"]
-                to_value = exchange['ToValue']
-                current_info = self.task.get_current_transaction_info(timestamp)
-                currency_rate_from = current_info.currencyRateFrom
-                buy_string += (f"{formatted_date_time}: куплено {float(to_value):.6f} {to_currency} на сумму {float(from_value):.2f} рублей"
-                               f" по курсу {currency_rate_from} рублей за {to_currency}\n")
+            f_list = self.prepare_exchanges_data(exchanges["buy_operations"])
+            for exch in f_list:
+                buy_string += (f"{exch['date_time']}: куплено {float(exch['to_value']):.6f} {exch['to_currency']} на сумму "
+                               f"{float(exch['from_value']):.2f} рублей по курсу {exch['rate_from']} рублей за {exch['to_currency']}\n")
 
-        if exchanges["sell_operations"] != []:
+        if exchanges["sell_operations"]:
             sell_string += "Операции продаж: \n"
-            for exchange in exchanges["sell_operations"]:
-                timestamp = exchange["DateTime"]
-                formatted_date_time = datetime.fromtimestamp(int(timestamp), pytz.timezone('Europe/Moscow')).strftime('%Y-%m-%d %H:%M:%S')
-                from_value = exchange["FromValue"]
-                from_currency = exchange['FromCurrency']
-                to_value = exchange['ToValue']
-                current_info = self.task.get_current_transaction_info(timestamp)
-                currency_rate_to = current_info.currencyRateTo
-                sell_string += (f"{formatted_date_time}: продано {float(from_value):.6f} {from_currency} на сумму {float(to_value):.2f} рублей"
-                                f" по курсу {currency_rate_to} рублей за {from_currency} \n")
+            f_list = self.prepare_exchanges_data(exchanges["sell_operations"])
+            for exch in f_list:
+                sell_string += (
+                    f"{exch['date_time']}: продано {float(exch['from_value']):.6f} {exch['from_currency']} на сумму "
+                    f"{float(exch['to_value']):.2f} рублей по курсу {exch['rate_to']} рублей за {exch['from_currency']} \n")
 
         return f"{buy_string} {sell_string}\n"
+
 
     # main_loop-----------------------------------------------------------------------------------------------------
     def main_loop(self):
