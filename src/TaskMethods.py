@@ -95,20 +95,6 @@ class Task():
 
         return {"buy_operations": bought_exchanges, "sell_operations": sold_exchanges}
 
-
-    def get_last_purchase_of_currency(self, buy_operations: list, currency: str) -> dict:
-        # Поиск покупок проданной крипты
-        currency_buy_operations = []
-        for op in buy_operations:
-            if op['ToCurrency'] == currency:
-                currency_buy_operations.append(op)
-
-        # Поиск индекса последней (с наиб. timestamp) покупки этой крипты
-        buy_date_times = [op['DateTime'] for op in currency_buy_operations]
-        last_buy_op_index = buy_date_times.index(max(buy_date_times))
-
-        return currency_buy_operations[last_buy_op_index]
-
     def calculate_transactions_profits(self) -> list:
         # Завершённые операции <Человек купил крипту и через n времени вернул всю сумму или часть от суммы в рубли>
         exchanges = self.exchanges_filter()
@@ -117,7 +103,6 @@ class Task():
         done_operations = []
 
         for sell in sell_operations:
-
             currency = sell['FromCurrency']
             value = sell["FromValue"]
             timestamp = sell['DateTime']
@@ -131,6 +116,20 @@ class Task():
                 {"timestamp": timestamp, "currency": currency, "profit": profit, "value": sell["FromValue"]})
 
         return done_operations
+    def get_last_purchase_of_currency(self, buy_operations: list, currency: str) -> dict:
+        # Поиск покупок проданной крипты
+        currency_buy_operations = []
+        for op in buy_operations:
+            if op['ToCurrency'] == currency:
+                currency_buy_operations.append(op)
+
+        # Поиск индекса последней (с наиб. timestamp) покупки этой крипты
+        buy_date_times = [op['DateTime'] for op in currency_buy_operations]
+        last_buy_op_index = buy_date_times.index(max(buy_date_times))
+
+        return currency_buy_operations[last_buy_op_index]
+
+
 
     def calculate_value_to(self, currency_from: str, currency_to: str, value_from: Decimal) -> Decimal:
         price_to = self.get_currency_price(currency_to, currency_from)
