@@ -15,7 +15,7 @@
    - Дополнительные методы tools, config и main. Tools содержит методы-помощники для класса Task, config - данные конфигурации, main - запускает инициализацию базы данных и включает интерфейс пользователя.
 
 ### Слои программы:
-Программа содержит 3 слоя абстрации. UserInterface > TaskMethods > Handlers. IserInterface не может использовать методы Handlers и обращается к данным с помощи прослойки TaskMethods.
+Программа содержит 3 слоя абстракции. UserInterface > TaskMethods > Handlers. IserInterface не может использовать методы Handlers и обращается к данным с помощи прослойки TaskMethods.
 
 ### Документация DatabaseModel и Handlers (то есть приложенного к заданию кода):
 Документация в виде схем с описаниями: https://miro.com/app/board/uXjVN0GBRzE=/?share_link_id=668176223358 \
