@@ -213,6 +213,11 @@ class TransactionHandler:
         self.session.add(profit_record)
         self.session.commit()
 
+    # def get_profits(self, telegram_id):
+    #     profits = self.session.query(Profits).filter(Profits.telegramId == telegram_id).all()
+    #
+    #     return profits
+
     def getExchanges(self, telegramId) -> list[dict[str]]:
         exchanges: list[ITransaction] = self.session.query(InternalExchange)\
             .filter(InternalExchange.userId == telegramId and InternalExchange.approved).all()

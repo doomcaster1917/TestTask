@@ -72,14 +72,47 @@ class Task():
         self.transactions_handler.addInChangeOperation(date_time=date_time, actingUser=actingUser, currency_from=currency_from, currency_to=currency_to,
                                                 value_from=value_from, value_to=value_to, currency_rate_from=cur_rate_from,
                                                 currency_rate_to=cur_rate_to, commission_rate=comission_rate)
-        self.transactions_handler.approveInChangeOperation(telegram_id=TELEGRAM_ID, date_time=date_time)
+        op = self.transactions_handler.approveInChangeOperation(telegram_id=TELEGRAM_ID, date_time=date_time)
 
         #4 Добавление купленной валюты(крипта) в кошелёк
         self.wallet_handler.add_to_wallet(telegram_id, currency_to, value_to)
 
 
-        #5 Удаление продаваемой валюты(по заданию -  RUB) из депозита
+        #5 Удаление продаваемой валюты(по заданию - RUB) из депозита
         self.transactions_handler.addOutOperation(actingUser, currency_from, cur_rate_from, value_from, comission_rate, date_time)
+
+
+        #6 Если операция - продажа (обмен криты на рубли), то сохранить profit(в рублях) и margin (разница в курсе крипты)
+        if currency_to == "RUB":
+            self.save_profit(op)
+
+
+    def save_profit(self, sell_transaction):
+        # Если есть операция продажи крипты, надо найти последнюю операцию покупки этой крипты и взять из неё курс
+
+        currency = sell_transaction.currencyFrom  # Проданная крипта = крипта, которую когда-то купили
+        exchanges = self.transactions_handler.getExchanges(self.telegram_id)
+        buy_operations = []
+        for exch in exchanges:
+            if exch['FromCurrency'] == currency:
+                buy_operations.append(exch)
+
+        buy_date_times = [op['DateTime'] for op in buy_operations]
+        last_buy_op_index = buy_date_times.index(str(max(buy_date_times)))
+
+        current_sell_info = self.get_current_transaction_info(sell_transaction.dateTime)
+        current_buy_info = self.get_current_transaction_info(buy_operations[last_buy_op_index]['DateTime'])
+
+        transaction_id = sell_transaction.transactionId
+        transaction_type = buy_operations[last_buy_op_index]['Type']
+        telegram_id = sell_transaction.userId
+
+        profit = (float(sell_transaction.valueFrom) *
+                  float(current_sell_info.currencyRateTo - current_buy_info.currencyRateFrom))  # в рублях
+
+        margin = current_sell_info.currencyRateFrom - current_buy_info.currencyRateTo  # разница курсов крипты
+        self.transactions_handler.add_profit(transaction_id, transaction_type, telegram_id, currency, profit, margin)
+
 
     # calculate_methods---------------------------------------------------------------------------------------------------------------------------
     def exchanges_filter(self) -> dict:
@@ -95,35 +128,41 @@ class Task():
 
         return {"buy_operations": bought_exchanges, "sell_operations": sold_exchanges}
 
+
     def calculate_transactions_profits(self):
         # Завершённые операции <Человек купил крипту и через n времени вернул всю сумму или часть от суммы в рубли>
         exchanges = self.exchanges_filter()
-        buy_exchanges = exchanges["buy_operations"]
+        buy_operations = exchanges["buy_operations"]
         sell_operations = exchanges["sell_operations"]
         done_operations = []
+        print(f"{len(sell_operations)} продаж {len(buy_operations)} покупок")
         for sell in sell_operations:
-            for buy in buy_exchanges:
-                if sell['ToCurrency'] == buy['FromCurrency'] and sell['DateTime'] > buy['DateTime']:
-                    current_sell_info = self.get_current_transaction_info(sell['DateTime'])
-                    current_buy_info = self.get_current_transaction_info(buy['DateTime'])
-                    timestamp = sell['DateTime']
-                    currency = sell['FromCurrency']
-                    profit = float(sell["FromValue"]) * float(current_sell_info.currencyRateTo - current_buy_info.currencyRateFrom) # в рублях
-                    done_operations.append({"timestamp": timestamp,"currency": currency, "profit": profit, "value": sell["FromValue"]})
 
-                    #Не входит в задание, но оставлю на всякий случай.
-                    #Возможно, вообще следовало бы в методе in_change_currency добавить этот код и
-                    #сохранять профиты при каждой операции перевода крипты в RUB
-                    """transaction_id = sell['transactionId']
-                    transaction_type = TransactionType.exchange
-                    telegram_id = sell['userId']
-                    margin = sell["valueTo"] * (current_sell_info.currencyRateFrom - current_buy_info.currencyRateTo)  # в криптовалюте
-                    self.transactions_handler.add_profit(transaction_id, transaction_type, telegram_id, currency, profit, margin)"""
+            currency = sell['FromCurrency'] # Проданная крипта = крипта, которую когда-то купили
+            value = sell["FromValue"]
+
+            # Поиск покупок проданной крипты
+            currency_buy_operations = []
+            for op in buy_operations:
+                if op['ToCurrency'] == currency:
+                    currency_buy_operations.append(op)
+
+            # Поиск индекса последней (с наиб. timestamp) покупки этой крипты
+            buy_date_times = [op['DateTime'] for op in currency_buy_operations]
+            last_buy_op_index = buy_date_times.index(str(max(buy_date_times)))
+
+            buy_info = self.get_current_transaction_info(currency_buy_operations[last_buy_op_index]['DateTime'])
+            sell_info = self.get_current_transaction_info(sell['DateTime'])
+
+            timestamp = sell['DateTime']
+            currency = sell['FromCurrency']
+            print(value, sell_info.currencyRateTo, buy_info.currencyRateFrom)
+            profit = float(value) * float(sell_info.currencyRateTo - buy_info.currencyRateFrom)  # в рублях
+            done_operations.append(
+                {"timestamp": timestamp, "currency": currency, "profit": profit, "value": sell["FromValue"]})
 
         return done_operations
 
-    def calculate_general_profit(self, transactions: list[dict]):
-        ...
     def calculate_value_to(self, currency_from: str, currency_to: str, value_from: Decimal):
         price_to = self.get_currency_price(currency_to, currency_from)
         value_to = value_from/price_to

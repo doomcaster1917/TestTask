@@ -136,15 +136,20 @@ class UserInterface():
     def profit_handler(self) -> None:
         done_operations = self.task.calculate_transactions_profits()
         output_string = ""
+        general_profit = 0
         for operation in done_operations:
             timestamp = operation["timestamp"]
             formatted_date_time = datetime.fromtimestamp(int(timestamp), pytz.timezone('Europe/Moscow')).strftime(
                 '%Y-%m-%d %H:%M:%S')
             output_string += (f"{formatted_date_time}: продажа {float(operation['value']):.6f} {operation['currency']} принесла"
                               f"{float(operation['profit']):.2f} рублей прибыли \n")
+            general_profit +=  operation['profit']
+
+        general_profit_str = f"\n Общая прибыль по всем операциям: {general_profit} \n"
         if output_string == '':
             output_string = '\n **Пока нет завершённых операций. \n'
-        command = input(f"{output_string} \n Для вовзрата в главное меню введите 'Выйти'")
+            general_profit_str = ''
+        command = input(f"{output_string} {general_profit_str} \n Для вовзрата в главное меню введите 'Выйти'")
 
         if command.lower() == 'выйти':
             self.main_commands_handler()
@@ -178,7 +183,7 @@ class UserInterface():
                 current_info = self.task.get_current_transaction_info(timestamp)
                 currency_rate_to = current_info.currencyRateTo
                 sell_string += (f"{formatted_date_time}: продано {float(from_value):.6f} {from_currency} на сумму {float(to_value):.2f} рублей"
-                                f" по курсу {currency_rate_to} рублей за {from_currency} ")
+                                f" по курсу {currency_rate_to} рублей за {from_currency} \n")
 
         return f"{buy_string} {sell_string}\n"
 
