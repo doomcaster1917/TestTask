@@ -130,7 +130,6 @@ class Task():
         return currency_buy_operations[last_buy_op_index]
 
 
-
     def calculate_value_to(self, currency_from: str, currency_to: str, value_from: Decimal) -> Decimal:
         price_to = self.get_currency_price(currency_to, currency_from)
         value_to = value_from/price_to
