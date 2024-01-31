@@ -28,7 +28,3 @@ def dectimal_converter(value: Union[str, float], currency: str):
         dectimal_to = Decimal(value).quantize(Decimal('.0000000000000000'), rounding=ROUND_DOWN)
     return dectimal_to
 
-# В программе возникает необходимость выразить рубль в цене криптовалюты (к примеру, BTC)
-# и в этом случае RUB может быть выражен dectimal-числом с большим количеством нулей после точки
-def revers_dectimal_converter(value: Union[str, float]):
-    return Decimal(value).quantize(Decimal('.0000000000000000'), rounding=ROUND_DOWN)

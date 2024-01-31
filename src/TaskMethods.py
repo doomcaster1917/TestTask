@@ -22,11 +22,8 @@ class Task():
     def get_currency_price(self, currency_from: str, currency_to: str) -> Decimal:
         URL = f'https://min-api.cryptocompare.com/data/price?fsym={currency_from}&tsyms={currency_to}'
         response = requests.get(URL)
-        if currency_to == "RUB":
-            dectimal_price = tools.revers_dectimal_converter(response.json()[currency_to]) #см. комментарии к методу
-        else:
-            dectimal_price = tools.dectimal_converter(response.json()[currency_to], currency_from)
-        return dectimal_price
+
+        return tools.dectimal_converter(response.json()[currency_to], currency_from)
 
     def get_wallet_balance(self, telegram_id=TELEGRAM_ID) -> dict:
         wallet = self.wallet_handler.get_wallet(telegram_id)
@@ -62,11 +59,11 @@ class Task():
         cur_rate_to = self.get_currency_price(currency_from, currency_to)
         comission_rate = 0
 
-        #1 Добавление продаваемой валюты(по заданию - RUB) в депозит
+        #1 Добавление продаваемой валюты в депозит
         self.transactions_handler.addInOperation(actingUser, currency_from, value_from, cur_rate_from, comission_rate, date_time)
         self.transactions_handler.approveAddInOperation(telegram_id, date_time)
 
-        #2 Удаление продаваемой валюты(по заданию -  RUB) из кошелька
+        #2 Удаление продаваемой валюты из кошелька
         self.wallet_handler.remove_from_wallet(telegram_id, currency_from, value_from)
 
         #3 Добавление обменной операции в таблицу внутренних обменных операций
@@ -75,11 +72,11 @@ class Task():
                                                 currency_rate_to=cur_rate_to, commission_rate=comission_rate)
         self.transactions_handler.approveInChangeOperation(telegram_id=TELEGRAM_ID, date_time=date_time)
 
-        #4 Добавление купленной валюты(крипта) в кошелёк
+        #4 Добавление купленной валюты в кошелёк
         self.wallet_handler.add_to_wallet(telegram_id, currency_to, value_to)
 
 
-        #5 Удаление продаваемой валюты(по заданию - RUB) из депозита
+        #5 Удаление продаваемой валюты из депозита
         self.transactions_handler.addOutOperation(actingUser, currency_from, cur_rate_from, value_from, comission_rate, date_time)
 
 
