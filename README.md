@@ -17,7 +17,8 @@
 ### Документация DatabaseModel и Handlers (то есть приложенного к заданию кода):
 Документация в виде схем с описаниями: https://miro.com/app/board/uXjVN0GBRzE=/?share_link_id=668176223358 \
 В документации описаны модели базы данных и класс TasksHandler.
-![Screenshot from 2024-01-31 21-38-26.png](..%2F..%2FPictures%2FScreenshots%2FScreenshot%20from%202024-01-31%2021-38-26.png)
+![Screenshot from 2024-01-31 21-38-26](https://github.com/doomcaster1917/TestTask/assets/113614995/52ce5cd3-0054-4572-9c91-6d8d33357d5a)
+
 
 ### Понятия купли/продажи.
  В коде эти понятия используются как абстрации над операцией обмена - InChange, созданные для интерфейса пользователя.
