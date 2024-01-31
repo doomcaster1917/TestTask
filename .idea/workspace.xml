@@ -7,7 +7,6 @@
     <list default="true" id="77185614-edfc-4fe3-83cc-781c6bab4a78" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/TaskMethods.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/TaskMethods.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -78,7 +77,7 @@
       <workItem from="1706433265227" duration="73699000" />
       <workItem from="1706604948824" duration="36784000" />
       <workItem from="1706686518945" duration="8219000" />
-      <workItem from="1706699380158" duration="21949000" />
+      <workItem from="1706699380158" duration="23179000" />
     </task>
     <servers />
   </component>
