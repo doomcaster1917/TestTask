@@ -16,6 +16,7 @@
 
 ### Слои программы:
 Программа содержит 3 слоя абстрации. UserInterface > TaskMethods > Handlers. IserInterface не может использовать методы Handlers и обращается к данным с помощи прослойки TaskMethods.
+TaskMethods, по сути, является Middleware сервиса.
 
 ### Документация DatabaseModel и Handlers (то есть приложенного к заданию кода):
 Документация в виде схем с описаниями: https://miro.com/app/board/uXjVN0GBRzE=/?share_link_id=668176223358 \

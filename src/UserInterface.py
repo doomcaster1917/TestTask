@@ -28,7 +28,7 @@ class UserInterface():
 
     def buy_commands_handler(self):
         currency_from = "RUB"
-        currency_to = self.choose_currence_to()
+        currency_to = self.choose_currency_to()
         value_from = self.choose_value_from(currency_from)
         value_to = self.task.calculate_value_to(currency_from, currency_to, value_from)
         date_time = datetime.now().strftime("%s")
@@ -38,7 +38,7 @@ class UserInterface():
         self.main_commands_handler()
 
 
-    def choose_currence_to(self):
+    def choose_currency_to(self):
         balance = self.task.get_wallet_balance()
         command = input(f"Ваш баланс {balance['RUB']} рублей. Выберите покупаемую валюту: \n 1.Monero - 'XMR' \n"
                             f"2.Ethereum - 'ETH'\n 3. Tronix - 'TRX' \n"
@@ -46,7 +46,7 @@ class UserInterface():
                             f"6.Bitcoin - 'BTC' \n")
         if command not in self.task.currencies:
             print("Валюта покупки выбрана неверно \n")
-            self.choose_currence_to()
+            self.choose_currency_to()
         else:
             return command
 
@@ -61,7 +61,7 @@ class UserInterface():
                 raise ValueError
         except ValueError:
             print("\n **Сумма введена неверно** \n")
-            self.choose_value_from(cur_from)
+            self.choose_currency_to()
 
 
     # sell_commands-----------------------------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ class UserInterface():
         currency_from = self.choose_crpt_currency_from()
 
         value_from = self.choose_crpt_value_from(currency_from)
-        value_to = self.task.calculate_value_to(currency_from, currency_to, value_from)  # returns Dectimal
+        value_to = self.task.calculate_value_to(currency_from, currency_to, value_from)
 
         date_time = datetime.now().strftime("%s")
         self.task.in_change_currency(date_time, self.task.telegram_id, currency_from=currency_from,
